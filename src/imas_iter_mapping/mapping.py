@@ -1,0 +1,236 @@
+from collections.abc import Iterable
+from contextlib import contextmanager
+from functools import cache
+from typing import Any, Self
+
+import imas
+import numpy as np
+import pint
+import strictyaml
+from imas.ids_data_type import IDSDataType
+from imas.ids_metadata import IDSMetadata
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
+
+from imas_iter_mapping.units import UNIT_REGISTRY
+
+
+@contextmanager
+def _as_value_error(err_msg):
+    """Helper context manager to raise a ValueError from any exception.
+
+    Pydantic validators are required to raise a ValueError (or AssertionError or
+    PydanticCustomError) when data is not valid. See:
+    https://docs.pydantic.dev/latest/concepts/validators/#raising-validation-errors
+    """
+    try:
+        yield
+    except Exception as exc:
+        raise ValueError(f"{err_msg} ({exc})") from exc
+
+
+def _raise_if_duplicate(values: Iterable, error_message: str):
+    """Helper function to raise a ValueError if duplicates are found."""
+    unique_elements, counts = np.unique(list(values), return_counts=True)
+    duplicates = unique_elements[counts > 1]
+    if len(duplicates) > 0:
+        duplicate_str = ", ".join(duplicates)
+        raise ValueError(error_message.format(duplicate_str))
+
+
+# TODO: maybe move this to another module
+@cache
+def load_machine_description_ids(md_uri: str, dd_version: str, ids_name: str):
+    """Load machine description IDS. The result is cached and shouldn't be modified."""
+    with imas.DBEntry(md_uri, "r", dd_version=dd_version) as entry:
+        # Assume MD is small enough to do a full get
+        return entry.get(ids_name)
+
+
+class ChannelSignal(BaseModel):
+    path: str
+    """Path inside the IDS channel. For example, "flux/value" of a flux_loop channel in
+    the magnetics IDS."""
+    signal: str
+    """Signal name in the data source."""
+    source_units: pint.Quantity | None = None
+    """Optional unit of the source signal."""
+    dd_units: pint.Unit | None = None
+    """Target unit following the IMAS Data Dictionary."""
+
+    model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
+
+    @model_validator(mode="after")
+    def parse_signal_expression(self):
+        signal, bracket, unit_with_bracket = self.signal.partition("[")
+        if bracket:
+            if not unit_with_bracket.endswith("]"):
+                raise ValueError(f"Was expecting a closing ']' in '{self.signal}'")
+            unit_str = unit_with_bracket.removesuffix("]")
+            try:
+                unit = UNIT_REGISTRY.Quantity(unit_str)
+            except pint.UndefinedUnitError as exc:
+                raise ValueError(f"Error parsing unit [{unit_str}]: {exc}") from None
+        else:
+            unit = None
+        self.signal = signal.strip()
+        self.source_units = unit
+        return self
+
+    @model_serializer(mode="plain")
+    def serialize_model(self) -> dict:
+        unit = f" [{self.source_units}]" if self.source_units is not None else ""
+        return {"path": self.path, "signal": f"{self.signal}{unit}"}
+
+    def validate_imas_paths_and_units(self, idsmeta: IDSMetadata) -> None:
+        with _as_value_error("Unknown IDS path"):
+            meta = idsmeta[self.path]
+        self.dd_units = UNIT_REGISTRY.Unit(meta.units)
+        if self.source_units is not None and not self.source_units.check(self.dd_units):
+            raise ValueError(
+                f"Unit [{self.source_units}] is incompatible with the IMAS "
+                f"Data Dictionary units [{meta.units}]"
+            )
+
+
+class ChannelMap(BaseModel):
+    """Configures signal mapping for a single channel in an IDS."""
+
+    name: str
+    """Name of the channel: used to match against Machine Description data."""
+    signals: list[ChannelSignal]
+    """List of signals within this channel."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def prepare_from_yaml(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            raise ValueError("Expecting a dictionary")
+        if "name" not in data:
+            raise ValueError("Missing channel 'name'")
+        return {
+            "name": data["name"],
+            "signals": [
+                {"path": key, "signal": value}
+                for key, value in data.items()
+                if key != "name"
+            ],
+        }
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict:
+        serialized = handler(self)
+        signals = serialized.pop("signals")
+        for signal in signals:
+            serialized[signal["path"]] = signal["signal"]
+        return serialized
+
+    def validate_imas_paths_and_units(self, idsmeta: IDSMetadata) -> None:
+        for signal in self.signals:
+            signal.validate_imas_paths_and_units(idsmeta)
+
+
+class SignalMap(BaseModel):
+    """Map of DAN signals to the IMAS Data Dictionary."""
+
+    description: str
+    """Free-format description of the mapping file."""
+    data_dictionary_version: str
+    """Version of the Data Dictionary that the mapping is validated for."""
+    machine_description_uri: str
+    """(IMAS) URI of a dataset containing machine description data."""
+    target_ids: str
+    """IDS name that all signals map to."""
+    signals: dict[str, list[ChannelMap]]
+    """List of channel maps per IDS path"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_imas_metadata(self) -> Self:
+        """Validator for the IMAS metadata: DD version and IDS paths."""
+        # Will raise a ValueError if the data dictionary version is unknown/incorrect:
+        factory = imas.IDSFactory(self.data_dictionary_version)
+        if self.data_dictionary_version.startswith("3."):
+            raise ValueError("Data Dictionary 3.x is not supported.")
+        # Will raise a ValueError if self.target_ids is not a valid IDS:
+        idsmeta = factory.new(self.target_ids).metadata
+        # Validate channel AoS
+        for ids_path, items in self.signals.items():
+            with _as_value_error("Unknown IDS path"):
+                aosmeta = idsmeta[ids_path]
+            if aosmeta.data_type is not IDSDataType.STRUCT_ARRAY:
+                raise ValueError(f"{ids_path} is not an array of structures")
+            for channelmap in items:
+                channelmap.validate_imas_paths_and_units(aosmeta)
+        return self
+
+    @model_validator(mode="after")
+    def validate_unique_dan_channels(self) -> Self:
+        """Validator for the DAN channel names.
+
+        The DAN channel names should be globally unique.
+        """
+        return self  # FIXME: for testing it's nice to be able to use duplicate signals
+        all_signal_names = []
+        for signal in self.signals.values():
+            for channelmap in signal:
+                all_signal_names.extend(s.signal for s in channelmap.signals)
+        _raise_if_duplicate(
+            all_signal_names, "Duplicate signal name in channel mapping: {}."
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_unique_imas_channels(self) -> Self:
+        """Validator for the IMAS channel names.
+
+        The IMAS channel names should be globally unique.
+        """
+        all_imas_channel_names = []
+        for signal in self.signals.values():
+            all_imas_channel_names.extend(channelmap.name for channelmap in signal)
+        _raise_if_duplicate(
+            all_imas_channel_names, "Duplicate IMAS name in channel mapping: {}."
+        )
+        return self
+
+    @model_validator(mode="after")
+    def validate_machine_description(self) -> Self:
+        """Validator for the Machine Description data."""
+        # Try to load Machine Description IDS
+        with _as_value_error("Could not load Machine Description"):
+            ids = load_machine_description_ids(
+                self.machine_description_uri,
+                self.data_dictionary_version,
+                self.target_ids,
+            )
+        # Check if all names are present in the Machine Description
+        for path, channels in self.signals.items():
+            all_names = {str(channel.name) for channel in ids[path]}
+            for channel in channels:
+                if channel.name not in all_names:
+                    raise ValueError(
+                        f"Channel name {channel.name} not found in Machine Description"
+                    )
+        return self
+
+    @classmethod
+    def from_yaml(cls, yaml_string) -> "SignalMap":
+        """Create a Signal Map from the provided yaml string."""
+        parsed_yaml = strictyaml.load(yaml_string)
+        yaml_dict = parsed_yaml.as_marked_up()
+        return cls(**yaml_dict)
+
+    def to_yaml(self) -> str:
+        """Convert the Signal Map into the yaml format."""
+        dct = self.model_dump()
+        yaml = strictyaml.as_document(dct)
+        return yaml.as_yaml()
