@@ -1,4 +1,4 @@
-# CODAC IMAS Mapping
+# IMAS ITER Mapping
 
 File format and logic for mapping CODAC signals to IMAS. 
 

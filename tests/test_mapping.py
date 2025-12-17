@@ -1,4 +1,4 @@
-import codac_imas_mapping
+import imas_iter_mapping
 
 
 def test_placeholder():
