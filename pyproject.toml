@@ -3,11 +3,11 @@ requires = ["setuptools>=64", "setuptools_scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codac-imas-mapping"
+name = "imas-iter-mapping"
 description = "Producers and consumers of streaming IMAS data."
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
-    {name = "CODAC-IMAS-Mapping Developers"},
+    {name = "IMAS-ITER-Mapping Developers"},
 ]
 classifiers = [
 ]
@@ -23,8 +23,8 @@ dynamic = ["version"]
 requires-python = ">=3.11"
 
 [project.optional-dependencies]
-all = ["codac-imas-mapping[dev]"]
-dev = ["codac-imas-mapping[test,linting]"]
+all = ["imas-iter-mapping[dev]"]
+dev = ["imas-iter-mapping[test,linting]"]
 linting = [
     "ruff",
 ]
@@ -36,11 +36,11 @@ test = [
 ]
 
 [project.urls]
-homepage = "https://github.com/iterorganization/CODAC-IMAS-Mapping"
+homepage = "https://github.com/iterorganization/IMAS-ITER-Mapping"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["codac-imas-mapping*"]
+include = ["imas-iter-mapping*"]
 
 [project.scripts]
 
