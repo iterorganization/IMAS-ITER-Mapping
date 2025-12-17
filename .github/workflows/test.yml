@@ -32,4 +32,4 @@ jobs:
         run: ruff format --diff
 
       - name: Run tests
-        run: pytest -n=auto --cov=codac_imas_mapping --cov-report=term-missing
+        run: pytest -n=auto --cov=imas_iter_mapping --cov-report=term-missing
