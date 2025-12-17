@@ -1,6 +1,6 @@
 # IMAS ITER Mapping
 
-File format and logic for mapping CODAC signals to IMAS. 
+File format and logic for mapping ITER CODAC signals to IMAS. 
 
 ## Development status
 
