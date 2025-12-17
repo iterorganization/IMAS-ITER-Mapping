@@ -40,7 +40,7 @@ homepage = "https://github.com/iterorganization/IMAS-ITER-Mapping"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["imas-iter-mapping*"]
+include = ["imas_iter_mapping*"]
 
 [project.scripts]
 
