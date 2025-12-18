@@ -29,6 +29,7 @@ linting = [
     "ruff",
 ]
 test = [
+    "imas-python[netcdf]",
     "pytest",
     "pytest-cov",
     "pytest-xdist",
