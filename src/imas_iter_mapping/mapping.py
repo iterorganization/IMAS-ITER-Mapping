@@ -70,6 +70,7 @@ class ChannelSignal(BaseModel):
 
     @model_validator(mode="after")
     def parse_signal_expression(self) -> Self:
+        """Parse optional units when reading a mapping file."""
         signal, bracket, unit_with_bracket = self.signal.partition("[")
         if bracket:
             if not unit_with_bracket.endswith("]"):
@@ -87,10 +88,12 @@ class ChannelSignal(BaseModel):
 
     @model_serializer(mode="plain")
     def serialize_model(self) -> dict:
+        """Serialize back into mapping format."""
         unit = f" [{self.source_units}]" if self.source_units is not None else ""
         return {"path": self.path, "signal": f"{self.signal}{unit}"}
 
     def validate_imas_paths_and_units(self, idsmeta: IDSMetadata) -> None:
+        """Check that the IMAS path exist and its units are compatible."""
         with _as_value_error("Unknown IDS path"):
             meta = idsmeta[self.path]
         self.dd_units = UNIT_REGISTRY.Unit(meta.units)
@@ -113,11 +116,12 @@ class ChannelMap(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def prepare_from_yaml(cls, data: Any) -> Any:
+    def parse_yaml(cls, data: Any) -> Any:
+        """Parse yaml dictionary to the internal representation."""
         if not isinstance(data, dict):
             raise ValueError("Expecting a dictionary")
         if "name" not in data:
-            raise ValueError("Missing channel 'name'")
+            raise ValueError("Missing channel name")
         return {
             "name": data["name"],
             "signals": [
@@ -129,6 +133,7 @@ class ChannelMap(BaseModel):
 
     @model_serializer(mode="wrap")
     def serialize_model(self, handler: SerializerFunctionWrapHandler) -> dict:
+        """Serialize back into the mapping format."""
         serialized = handler(self)
         signals = serialized.pop("signals")
         for signal in signals:
@@ -136,6 +141,7 @@ class ChannelMap(BaseModel):
         return serialized
 
     def validate_imas_paths_and_units(self, idsmeta: IDSMetadata) -> None:
+        """Check per signal that the IMAS path exist and its units are compatible."""
         for signal in self.signals:
             signal.validate_imas_paths_and_units(idsmeta)
 
