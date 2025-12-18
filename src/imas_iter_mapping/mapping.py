@@ -147,7 +147,7 @@ class ChannelMap(BaseModel):
 
 
 class SignalMap(BaseModel):
-    """Map of DAN signals to the IMAS Data Dictionary."""
+    """Map of CODAC signals to the IMAS Data Dictionary."""
 
     description: str
     """Free-format description of the mapping file."""
