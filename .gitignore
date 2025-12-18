@@ -1,2 +1,5 @@
 __pycache__
 *.egg-info
+
+# Test data
+tests/iter_md_magnetics_150100_5.nc

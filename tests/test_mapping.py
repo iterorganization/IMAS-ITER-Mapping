@@ -4,11 +4,11 @@ from imas_iter_mapping import UNIT_REGISTRY, SignalMap
 
 
 @pytest.fixture()
-def mapping():
-    mapping = """\
+def mapping(iter_md_magnetics_path):
+    mapping = f"""\
 description: Test mapping
 data_dictionary_version: 4.0.0
-machine_description_uri: imas:hdf5?path=/work/imas/shared/imasdb/ITER_MD/4/150100/5
+machine_description_uri: {iter_md_magnetics_path}
 
 target_ids: magnetics
 signals:
@@ -20,13 +20,10 @@ signals:
     return SignalMap.from_yaml(mapping)
 
 
-def test_signal_map(mapping):
+def test_signal_map(mapping, iter_md_magnetics_path):
     assert mapping.description == "Test mapping"
     assert mapping.data_dictionary_version == "4.0.0"
-    assert (
-        mapping.machine_description_uri
-        == "imas:hdf5?path=/work/imas/shared/imasdb/ITER_MD/4/150100/5"
-    )
+    assert mapping.machine_description_uri == str(iter_md_magnetics_path)
     assert mapping.target_ids == "magnetics"
 
     assert mapping.signals.keys() == {"flux_loop"}

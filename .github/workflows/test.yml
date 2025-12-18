@@ -31,5 +31,8 @@ jobs:
       - name: Run Ruff formatter
         run: ruff format --diff
 
+      - name: Download test data
+        run: bash prepare-test-data.sh
+
       - name: Run tests
         run: pytest -n=auto --cov=imas_iter_mapping --cov-report=term-missing

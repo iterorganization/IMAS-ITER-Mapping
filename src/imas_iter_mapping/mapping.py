@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from functools import cache
 from typing import Any, Self
@@ -9,6 +9,7 @@ import pint
 import strictyaml
 from imas.ids_data_type import IDSDataType
 from imas.ids_metadata import IDSMetadata
+from imas.ids_toplevel import IDSToplevel
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -21,7 +22,7 @@ from imas_iter_mapping.units import UNIT_REGISTRY
 
 
 @contextmanager
-def _as_value_error(err_msg):
+def _as_value_error(err_msg) -> Iterator[None]:
     """Helper context manager to raise a ValueError from any exception.
 
     Pydantic validators are required to raise a ValueError (or AssertionError or
@@ -34,7 +35,7 @@ def _as_value_error(err_msg):
         raise ValueError(f"{err_msg} ({exc})") from exc
 
 
-def _raise_if_duplicate(values: Iterable, error_message: str):
+def _raise_if_duplicate(values: Iterable, error_message: str) -> None:
     """Helper function to raise a ValueError if duplicates are found."""
     unique_elements, counts = np.unique(list(values), return_counts=True)
     duplicates = unique_elements[counts > 1]
@@ -45,7 +46,9 @@ def _raise_if_duplicate(values: Iterable, error_message: str):
 
 # TODO: maybe move this to another module
 @cache
-def load_machine_description_ids(md_uri: str, dd_version: str, ids_name: str):
+def load_machine_description_ids(
+    md_uri: str, dd_version: str, ids_name: str
+) -> IDSToplevel:
     """Load machine description IDS. The result is cached and shouldn't be modified."""
     with imas.DBEntry(md_uri, "r", dd_version=dd_version) as entry:
         # Assume MD is small enough to do a full get
@@ -66,7 +69,7 @@ class ChannelSignal(BaseModel):
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
     @model_validator(mode="after")
-    def parse_signal_expression(self):
+    def parse_signal_expression(self) -> Self:
         signal, bracket, unit_with_bracket = self.signal.partition("[")
         if bracket:
             if not unit_with_bracket.endswith("]"):
