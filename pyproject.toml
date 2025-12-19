@@ -18,6 +18,8 @@ dependencies = [
     "pint",
     "pydantic",
     "strictyaml",
+    # N.B. this package is not yet publicly available
+    "imas-streams @ git+https://github.com/iterorganization/IMAS-Streams.git",
 ]
 dynamic = ["version"]
 requires-python = ">=3.11"

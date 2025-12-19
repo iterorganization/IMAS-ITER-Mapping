@@ -1,6 +1,5 @@
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from functools import cache
 from typing import Any, Self
 
 import imas
@@ -9,7 +8,6 @@ import pint
 import strictyaml
 from imas.ids_data_type import IDSDataType
 from imas.ids_metadata import IDSMetadata
-from imas.ids_toplevel import IDSToplevel
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -19,6 +17,7 @@ from pydantic import (
 )
 
 from imas_iter_mapping.units import UNIT_REGISTRY
+from imas_iter_mapping.util import load_machine_description_ids
 
 
 @contextmanager
@@ -42,17 +41,6 @@ def _raise_if_duplicate(values: Iterable, error_message: str) -> None:
     if len(duplicates) > 0:
         duplicate_str = ", ".join(duplicates)
         raise ValueError(error_message.format(duplicate_str))
-
-
-# TODO: maybe move this to another module
-@cache
-def load_machine_description_ids(
-    md_uri: str, dd_version: str, ids_name: str
-) -> IDSToplevel:
-    """Load machine description IDS. The result is cached and shouldn't be modified."""
-    with imas.DBEntry(md_uri, "r", dd_version=dd_version) as entry:
-        # Assume MD is small enough to do a full get
-        return entry.get(ids_name)
 
 
 class ChannelSignal(BaseModel):
