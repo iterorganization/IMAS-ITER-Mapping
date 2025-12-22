@@ -42,7 +42,7 @@ def _dynamicdata_from_ids(item):
 
 def calculate_streaming_metadata(
     signalmap: "SignalMap",
-) -> tuple[StreamingIMASMetadata, list[ChannelSignal]]:
+) -> tuple[StreamingIMASMetadata, list["ChannelSignal"]]:
     """Calculate streaming metadata and corresponding signals from the mapping.
 
     Note that the ChannelSignal list has one item less than the dynamic data in the

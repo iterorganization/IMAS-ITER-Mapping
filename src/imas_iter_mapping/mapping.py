@@ -90,6 +90,7 @@ class ChannelSignal(BaseModel):
                 f"Unit [{self.source_units}] is incompatible with the IMAS "
                 f"Data Dictionary units [{meta.units}]"
             )
+        # TODO: check that this is mapped to a dynamic FLT 0D/1D signal
 
 
 class ChannelMap(BaseModel):
@@ -175,7 +176,6 @@ class SignalMap(BaseModel):
 
         The DAN channel names should be globally unique.
         """
-        return self  # FIXME: for testing it's nice to be able to use duplicate signals
         all_signal_names = []
         for signal in self.signals.values():
             for channelmap in signal:
@@ -224,6 +224,8 @@ class SignalMap(BaseModel):
         """Create a Signal Map from the provided yaml string."""
         parsed_yaml = strictyaml.load(yaml_string)
         yaml_dict = parsed_yaml.as_marked_up()
+        # TODO: proper error message when yaml_dict is not an actual dictionary (list,
+        # str, etc.)
         return cls(**yaml_dict)
 
     def to_yaml(self) -> str:
