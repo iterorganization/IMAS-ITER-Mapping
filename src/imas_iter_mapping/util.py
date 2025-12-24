@@ -1,6 +1,7 @@
 import copy
 import datetime
 from functools import cache
+from importlib.metadata import distribution
 from typing import TYPE_CHECKING
 
 import imas
@@ -40,6 +41,18 @@ def _dynamicdata_from_ids(item):
     )
 
 
+def fill_library_metadata(code) -> None:
+    code.library.resize(len(code.library) + 2, keep=True)
+    for i, distname in enumerate(["imas-iter-mapping", "imas-streams"], start=1):
+        dist = distribution(distname)
+        meta = dist.metadata
+
+        code.library[-i].name = dist.name
+        code.library[-i].description = meta.get("summary")
+        code.library[-i].version = dist.version
+        code.library[-i].repository = dist.metadata.get("project-url")
+
+
 def calculate_streaming_metadata(
     signalmap: "SignalMap",
 ) -> tuple[StreamingIMASMetadata, list["ChannelSignal"]]:
@@ -65,11 +78,13 @@ def calculate_streaming_metadata(
     properties = static_data.ids_properties
     properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     properties.comment = "Streaming IMAS data from ITER Diagnostics"
-    properties.creation_date = datetime.date.today().isoformat()
+    now = datetime.datetime.now(datetime.UTC)
+    properties.creation_date = now.isoformat(timespec="seconds")
     properties.provenance.node.resize(1)
     properties.provenance.node[0].path = ""  # whole IDS
     properties.provenance.node[0].reference.resize(1)
     properties.provenance.node[0].reference[0].name = signalmap.machine_description_uri
+    fill_library_metadata(static_data.code)
 
     # Populate paths relevant for the mapping
     for item in static_data:
@@ -99,8 +114,8 @@ def calculate_streaming_metadata(
     # Double check that we have everything
     num_expected_fields = 1 + sum(
         len(channel.signals)
-        for channel in channels
         for channels in signalmap.signals.values()
+        for channel in channels
     )
     assert num_expected_fields == len(dynamic_data)
 
