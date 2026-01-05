@@ -81,7 +81,7 @@ class ChannelSignal(BaseModel):
             except pint.UndefinedUnitError as exc:
                 raise ValueError(f"Error parsing unit [{unit_str}]: {exc}") from None
         else:
-            unit = None
+            raise ValueError(f"Missing unit in mapping for signal '{signal}'")
         self.signal = signal.strip()
         self.source_units = unit
         return self
