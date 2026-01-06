@@ -61,20 +61,23 @@ class ChannelSignal(BaseModel):
     the magnetics IDS."""
     signal: str
     """Signal name in the data source."""
-    source_units: pint.Quantity | None = None
+    source_units: pint.Quantity
     """Optional unit of the source signal."""
-    dd_units: pint.Unit | None = None
+    dd_units: pint.Unit | None = None  # N.B. will be None until validation completes
     """Target unit following the IMAS Data Dictionary."""
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    @model_validator(mode="after")
-    def parse_signal_expression(self) -> Self:
+    @model_validator(mode="before")
+    @classmethod
+    def parse_signal_expression(cls, data: Any) -> Self:
         """Parse optional units when reading a mapping file."""
-        signal, bracket, unit_with_bracket = self.signal.partition("[")
+        if not isinstance(data, dict):
+            raise ValueError("Expecting a dictionary")
+        signal, bracket, unit_with_bracket = data["signal"].partition("[")
         if bracket:
             if not unit_with_bracket.endswith("]"):
-                raise ValueError(f"Was expecting a closing ']' in '{self.signal}'")
+                raise ValueError(f"Was expecting a closing ']' in '{data['signal']}'")
             unit_str = unit_with_bracket.removesuffix("]")
             try:
                 unit = UNIT_REGISTRY.Quantity(unit_str)
@@ -82,22 +85,21 @@ class ChannelSignal(BaseModel):
                 raise ValueError(f"Error parsing unit [{unit_str}]: {exc}") from None
         else:
             raise ValueError(f"Missing unit in mapping for signal '{signal}'")
-        self.signal = signal.strip()
-        self.source_units = unit
-        return self
+        data["signal"] = signal.strip()
+        data["source_units"] = unit
+        return data
 
     @model_serializer(mode="plain")
     def serialize_model(self) -> dict:
         """Serialize back into mapping format."""
-        unit = f" [{self.source_units}]" if self.source_units is not None else ""
-        return {"path": self.path, "signal": f"{self.signal}{unit}"}
+        return {"path": self.path, "signal": f"{self.signal} [{self.source_units}]"}
 
     def validate_imas_paths_and_units(self, idsmeta: IDSMetadata) -> None:
         """Check that the IMAS path exist and its units are compatible."""
         with _as_value_error("Unknown IDS path"):
             meta = idsmeta[self.path]
         self.dd_units = UNIT_REGISTRY.Unit(meta.units)
-        if self.source_units is not None and not self.source_units.check(self.dd_units):
+        if not self.source_units.check(self.dd_units):
             raise ValueError(
                 f"Unit [{self.source_units}] is incompatible with the IMAS "
                 f"Data Dictionary units [{meta.units}]"
