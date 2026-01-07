@@ -18,7 +18,7 @@ from pydantic import (
     model_validator,
 )
 
-from imas_iter_mapping.units import UNIT_REGISTRY
+from imas_iter_mapping.units import UNIT_REGISTRY, UnitConversion
 
 
 @contextmanager
@@ -88,6 +88,11 @@ class ChannelSignal(BaseModel):
         data["signal"] = signal.strip()
         data["source_units"] = unit
         return data
+
+    def get_unit_conversion(self) -> UnitConversion:
+        """Get the linear coefficients for converting from source to DD units."""
+        assert self.dd_units is not None
+        return UnitConversion.calculate(self.source_units, self.dd_units)
 
     @model_serializer(mode="plain")
     def serialize_model(self) -> dict:
