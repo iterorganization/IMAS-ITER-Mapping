@@ -36,8 +36,8 @@ signals:
 """ + "".join(
         f"""\
   - name: {loop.name}
-    flux/data: flux-{i}
-    voltage/data: voltage-{i}
+    flux/data: flux-{i} [Wb]
+    voltage/data: voltage-{i} [V]
 """
         for i, loop in enumerate(flux_loops)
     )
@@ -57,17 +57,17 @@ target_ids: magnetics
 signals:
   flux_loop:
   - name: {mag.flux_loop[0].name}
-    flux/data: flux-0
-    voltage/data: voltage-0
+    flux/data: flux-0 [Wb]
+    voltage/data: voltage-0 [V]
   - name: {mag.flux_loop[3].name}
-    flux/data: flux-3
+    flux/data: flux-3 [Wb]
   - name: {mag.flux_loop[5].name}
-    voltage/data: voltage-5
+    voltage/data: voltage-5 [V]
   b_field_pol_probe:
   - name: {mag.b_field_pol_probe[10].name}
-    field/data: field-10
+    field/data: field-10 [T]
   - name: {mag.b_field_pol_probe[11].name}
-    field/data: field-11
+    field/data: field-11 [T]
 """
     return SignalMap.from_yaml(mapping)
 
