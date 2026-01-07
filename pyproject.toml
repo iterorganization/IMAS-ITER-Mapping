@@ -18,7 +18,7 @@ dependencies = [
     "pint",
     "pydantic",
     "strictyaml",
-    # N.B. this package is not yet publicly available
+    # Not yet on PyPI, install directly from git for now
     "imas-streams @ git+https://github.com/iterorganization/IMAS-Streams.git",
 ]
 dynamic = ["version"]
