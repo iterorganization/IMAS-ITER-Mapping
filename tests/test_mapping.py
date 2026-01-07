@@ -36,7 +36,9 @@ def test_signal_map(mapping, iter_md_magnetics_path):
     assert channelmaps[0].signals[0].signal == "CWS-SCSU-CC2A-WCC-WPU1:PT1002-XI0"
     assert channelmaps[0].signals[0].source_units == UNIT_REGISTRY.Quantity("Wb")
     assert channelmaps[0].signals[0].dd_units == UNIT_REGISTRY.Unit("Wb")
+    assert channelmaps[0].signals[0].get_unit_conversion() == (1, 0)
     assert channelmaps[0].signals[1].path == "voltage/data"
     assert channelmaps[0].signals[1].signal == "CWS-SCSU-CC2A-WCC-WPU1:PT1002-XI1"
     assert channelmaps[0].signals[1].source_units == UNIT_REGISTRY.Quantity("mV")
     assert channelmaps[0].signals[1].dd_units == UNIT_REGISTRY.Unit("V")
+    assert channelmaps[0].signals[1].get_unit_conversion() == (0.001, 0)
