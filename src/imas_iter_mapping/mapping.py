@@ -1,6 +1,5 @@
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from functools import cache
 from typing import Any, Self
 
 import imas
@@ -9,7 +8,6 @@ import pint
 import strictyaml
 from imas.ids_data_type import IDSDataType
 from imas.ids_metadata import IDSMetadata
-from imas.ids_toplevel import IDSToplevel
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -19,6 +17,7 @@ from pydantic import (
 )
 
 from imas_iter_mapping.units import UNIT_REGISTRY, UnitConversion
+from imas_iter_mapping.util import load_machine_description_ids
 
 
 @contextmanager
@@ -42,17 +41,6 @@ def _raise_if_duplicate(values: Iterable, error_message: str) -> None:
     if len(duplicates) > 0:
         duplicate_str = ", ".join(duplicates)
         raise ValueError(error_message.format(duplicate_str))
-
-
-# TODO: maybe move this to another module
-@cache
-def load_machine_description_ids(
-    md_uri: str, dd_version: str, ids_name: str
-) -> IDSToplevel:
-    """Load machine description IDS. The result is cached and shouldn't be modified."""
-    with imas.DBEntry(md_uri, "r", dd_version=dd_version) as entry:
-        # Assume MD is small enough to do a full get
-        return entry.get(ids_name)
 
 
 class ChannelSignal(BaseModel):
@@ -109,6 +97,7 @@ class ChannelSignal(BaseModel):
                 f"Unit [{self.source_units}] is incompatible with the IMAS "
                 f"Data Dictionary units [{meta.units}]"
             )
+        # TODO: check that this is mapped to a dynamic FLT 0D/1D signal
 
 
 class ChannelMap(BaseModel):
@@ -194,7 +183,6 @@ class SignalMap(BaseModel):
 
         The DAN channel names should be globally unique.
         """
-        return self  # FIXME: for testing it's nice to be able to use duplicate signals
         all_signal_names = []
         for signal in self.signals.values():
             for channelmap in signal:
@@ -243,6 +231,8 @@ class SignalMap(BaseModel):
         """Create a Signal Map from the provided yaml string."""
         parsed_yaml = strictyaml.load(yaml_string)
         yaml_dict = parsed_yaml.as_marked_up()
+        # TODO: proper error message when yaml_dict is not an actual dictionary (list,
+        # str, etc.)
         return cls(**yaml_dict)
 
     def to_yaml(self) -> str:
