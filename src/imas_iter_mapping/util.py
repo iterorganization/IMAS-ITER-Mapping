@@ -38,7 +38,7 @@ def _dynamicdata_from_ids(item) -> DynamicData:
         raise NotImplementedError(f"Unsupported data type: {metadata.data_type}")
     return DynamicData(
         path=imas.util.get_full_path(item),
-        shape=(1,) * metadata.ndim,
+        shape=(1,) * metadata.ndim,  # Produces the empty tuple for 0D variables
         data_type="f64",
     )
 

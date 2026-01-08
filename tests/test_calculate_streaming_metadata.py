@@ -2,8 +2,10 @@ import datetime
 import random
 
 import imas.util
+import numpy as np
 import pytest
 from imas.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imas_streams import StreamingIDSConsumer
 
 from imas_iter_mapping import SignalMap
 from imas_iter_mapping.util import (
@@ -119,6 +121,23 @@ def test_small_mapping(iter_md_magnetics_path, small_mapping):
     # 6 mapped signals:
     assert len(signals) == 6
     assert len(metadata.dynamic_data) == 7  # Includes time as well
+
+
+def test_receive_streaming_data(small_mapping):
+    metadata, signals = calculate_streaming_metadata(small_mapping)
+
+    consumer = StreamingIDSConsumer(metadata)
+    testdata = np.arange(7, dtype=float)
+
+    ids = consumer.process_message(testdata.tobytes())
+    # Check that all data is copied to the correct spot
+    assert np.array_equal(ids.time, [0.0])
+    assert np.array_equal(ids.flux_loop[0].flux.data, [1.0])
+    assert np.array_equal(ids.flux_loop[0].voltage.data, [2.0])
+    assert np.array_equal(ids.flux_loop[1].flux.data, [3.0])
+    assert np.array_equal(ids.flux_loop[2].voltage.data, [4.0])
+    assert np.array_equal(ids.b_field_pol_probe[0].field.data, [5.0])
+    assert np.array_equal(ids.b_field_pol_probe[1].field.data, [6.0])
 
 
 def test_ids_properties_and_code(iter_md_magnetics_path, small_mapping):
