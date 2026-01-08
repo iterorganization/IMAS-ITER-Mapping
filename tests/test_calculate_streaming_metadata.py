@@ -7,6 +7,7 @@ from imas.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 
 from imas_iter_mapping import SignalMap
 from imas_iter_mapping.util import (
+    add_library_metadata,
     calculate_streaming_metadata,
     load_machine_description_ids,
 )
@@ -140,3 +141,16 @@ def test_ids_properties_and_code(iter_md_magnetics_path, small_mapping):
         assert lib.description
         assert lib.version
         assert lib.repository
+
+
+def test_add_library_metadata():
+    ids = imas.IDSFactory("4.0.0").magnetics()
+    ids.code.library.resize(1)
+    ids.code.library[0].name = "test, existing"
+
+    add_library_metadata(ids.code, ("imas-iter-mapping", "imas-python"))
+    assert ids.code.library[0].name == "test, existing"
+    assert ids.code.library[1].name == "imas-iter-mapping"
+    assert ids.code.library[2].name == "imas-python"
+
+    add_library_metadata(ids.code, ("imas-iter-mapping", "imas-python"))
