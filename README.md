@@ -50,6 +50,11 @@ Mapping file features:
 - Indicate units of the source signals, to allow automatic conversion to the
   units specified in the IMAS Data Dictionary.
 
+  **N.B.** Only 'linear' unit conversions are supported at this moment. It is
+  not possible to convert logarithmic units (such as
+  [`dBW`](https://en.wikipedia.org/wiki/Decibel_watt)) to their non-logarithmic
+  counterparts (`W`, in this example) or vice versa.
+
 More details about the mapping logic and file format can be found in
 [docs/mapping.md](docs/mapping.md).
 
@@ -62,6 +67,8 @@ with `pip` as follows:
 pip install 'imas-iter-mapping @ git+https://github.com/iterorganization/IMAS-ITER-Mapping.git'
 ```
 
+### Command line tool
+
 After installation, the `imas-iter-mapping` program should be available. This
 program can validate a mapping file as follows:
 
@@ -71,6 +78,22 @@ imas-iter-mapping validate mapping.yaml
 # Or alternatively:
 python -m imas_iter_mapping validate mapping.yaml
 ```
+
+You can display some statistics of a mapping file and the associated machine
+description with:
+
+```bash
+imas-iter-mapping describe mapping.yaml
+```
+
+You can learn more details with the `--help` option:
+
+```bash
+imas-iter-mapping --help
+imas-iter-mapping validate --help
+imas-iter-mapping describe --help
+```
+
 
 
 ## Legal

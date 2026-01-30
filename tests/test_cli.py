@@ -22,14 +22,14 @@ signals:
     return fname
 
 
-def test_success(mapping_file):
+def test_validate_success(mapping_file):
     runner = CliRunner()
     result = runner.invoke(main, ["validate", str(mapping_file)])
     assert result.exit_code == 0
     assert str(mapping_file) in result.output
 
 
-def test_yaml_error(mapping_file):
+def test_validate_yaml_error(mapping_file):
     mapping_file.write_text("asdf")
     runner = CliRunner()
     result = runner.invoke(main, ["validate", str(mapping_file)])
@@ -38,7 +38,7 @@ def test_yaml_error(mapping_file):
     assert "line 1" in result.output
 
 
-def test_parsing_error(mapping_file):
+def test_validate_parsing_error(mapping_file):
     with open(mapping_file, "a") as f:
         f.write("  - name: xyz")
     runner = CliRunner()
@@ -48,8 +48,15 @@ def test_parsing_error(mapping_file):
     assert "line 9" in result.output
 
 
-def test_quiet(mapping_file):
+def test_validate_quiet(mapping_file):
     runner = CliRunner()
     result = runner.invoke(main, ["validate", "-q", str(mapping_file)])
     assert result.exit_code == 0
     assert result.output == ""
+
+
+def test_describe(mapping_file):
+    runner = CliRunner()
+    result = runner.invoke(main, ["describe", str(mapping_file)])
+    assert result.exit_code == 0
+    assert result.output != ""

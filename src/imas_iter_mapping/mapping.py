@@ -6,6 +6,7 @@ import pint
 import strictyaml
 from imas.ids_data_type import IDSDataType
 from imas.ids_metadata import IDSMetadata
+from imas.ids_toplevel import IDSToplevel
 from strictyaml import Map, MapCombined, MapPattern, Seq, Str
 
 from imas_iter_mapping.exceptions import ValidationError, as_validation_error
@@ -46,6 +47,20 @@ class SignalMap:
     target_ids: str
     """IDS name that all signals map to."""
     signals: dict[str, list["ChannelMap"]]
+
+    @property
+    def num_signals(self) -> int:
+        """The number of mapped signals"""
+        return sum(
+            len(channel.signals)
+            for channels in self.signals.values()
+            for channel in channels
+        )
+
+    @property
+    def machine_description(self) -> IDSToplevel:
+        """The loaded machine description IDS"""
+        return self._machine_description
 
     @classmethod
     def from_yaml(cls, yaml: str | TextIO) -> Self:

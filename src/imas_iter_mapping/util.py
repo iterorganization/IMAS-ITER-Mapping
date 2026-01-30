@@ -79,11 +79,7 @@ def calculate_streaming_metadata(
     StreamingIMASMetadata: the time variable is not explicitly mapped, while being
     explicitly mentioned in the metadata.
     """
-    machine_description = load_machine_description_ids(
-        signalmap.machine_description_uri,
-        signalmap.data_dictionary_version,
-        signalmap.target_ids,
-    )
+    machine_description = signalmap.machine_description
     static_data = copy.deepcopy(machine_description)
     static_data.time = np.array([np.nan])
 
@@ -129,11 +125,7 @@ def calculate_streaming_metadata(
             item.resize(0)
 
     # Double check that we have everything
-    num_expected_fields = 1 + sum(
-        len(channel.signals)
-        for channels in signalmap.signals.values()
-        for channel in channels
-    )
+    num_expected_fields = 1 + signalmap.num_signals  # Time is not explicitly mapped
     assert num_expected_fields == len(dynamic_data)
 
     return (
