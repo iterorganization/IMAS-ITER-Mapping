@@ -67,6 +67,8 @@ with `pip` as follows:
 pip install 'imas-iter-mapping @ git+https://github.com/iterorganization/IMAS-ITER-Mapping.git'
 ```
 
+Learn more about the public API in [docs/api.md](docs/api.md)
+
 ### Command line tool
 
 After installation, the `imas-iter-mapping` program should be available. This
