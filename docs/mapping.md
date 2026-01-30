@@ -100,7 +100,7 @@ various checks that are performed.
 - `target_ids` must be a valid IDS name that exists in the specified version of
   the IMAS Data Dictionary.
 - The `machine_description_uri` must be valid, and must have data for the
-  `target_ids` IDS.
+  target IDS.
 
 ### Validation rules for the signal mapping
 
@@ -130,3 +130,7 @@ various checks that are performed.
     the Data Dictionary expects data with units `V` (volt). However, a signal
     with units `degC` (degrees Celsius) is compatible when the Data Dictionary
     expects data with units `K` (kelvin).
+  
+  Additional signals can be mapped for the diagnostic channel with the same
+  name (e.g. `<idspath2>: <signal2> [<unit2>]`). The same rules apply to these
+  additional signals.
