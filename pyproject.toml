@@ -13,6 +13,7 @@ classifiers = [
 ]
 license = {file = "LICENSE.txt"}
 dependencies = [
+    "click",
     "imas-python",
     "numpy",
     "pint",
@@ -45,6 +46,7 @@ where = ["src"]
 include = ["imas_iter_mapping*"]
 
 [project.scripts]
+imas-iter-mapping = "imas_iter_mapping.cli:main"
 
 [tool.setuptools_scm]
 local_scheme = "no-local-version"
