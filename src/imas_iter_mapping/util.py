@@ -17,6 +17,16 @@ if TYPE_CHECKING:
     from imas_iter_mapping.mapping import ChannelSignal, SignalMap
 
 
+def get_unit_conversion_arrays(
+    signals: list["ChannelSignal"],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Determine scale and offset arrays for unit conversions of all signals."""
+    conversions = [signal.get_unit_conversion() for signal in signals]
+    scale = np.array([conversion.scale for conversion in conversions])
+    offset = np.array([conversion.offset for conversion in conversions])
+    return (scale, offset)
+
+
 @cache
 def load_machine_description_ids(
     md_uri: str, dd_version: str, ids_name: str
