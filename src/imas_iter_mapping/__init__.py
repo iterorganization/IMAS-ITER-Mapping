@@ -1,3 +1,4 @@
+from .exceptions import ValidationError
 from .mapping import ChannelMap, ChannelSignal, SignalMap
 from .units import UNIT_REGISTRY, UnitConversion
 
@@ -7,4 +8,5 @@ __all__ = [
     "ChannelMap",
     "ChannelSignal",
     "SignalMap",
+    "ValidationError",
 ]
