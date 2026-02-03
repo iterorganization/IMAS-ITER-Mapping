@@ -106,8 +106,8 @@ various checks that are performed.
 
 - A `signals:` element must be present in the file.
 - Every key in the `signals` element (e.g. `flux_loop` in the example above)
-  must correspond to an Array of Structures in the target IDS. This must
-  furthermore consist of a list of the following structure:
+  must correspond to an Array of Structures in the target IDS. Its value must
+  be a list with the following structure:
 
   ```yaml
   - name: <name>
@@ -115,13 +115,13 @@ various checks that are performed.
     ...
   ```
 
-  Further validation checks are performed on this data:
+  Further validation checks are performed on each element in this list:
 
   - The `name` key must be present, and its value (`<name>`) must correspond to
     a name in the Machine Description IDS.
   - Each `name` in the mapping must be unique.
   - The `<idspath1>` must exist as a child element in the IDS.
-  - `<signal1>` is the name of the diagnostic signal, which name must be unique
+  - `<signal1>` is the name of the diagnostic signal, which must be unique
     in the mapping file.
   - `<unit1>` is mandatory to provide, it must parse correctly and be compatible
     with the units in the Data Dictionary.
@@ -132,5 +132,7 @@ various checks that are performed.
     expects data with units `K` (kelvin).
   
   Additional signals can be mapped for the diagnostic channel with the same
-  name (e.g. `<idspath2>: <signal2> [<unit2>]`). The same rules apply to these
-  additional signals.
+  name (e.g. `<idspath2>: <signal2> [<unit2>]`). This enables easy mapping of
+  multiple signals that belong to the same item (such as the measured flux
+  and the instantaneous measured voltage of a flux loop as in the example
+  above).
